@@ -40,7 +40,6 @@ button.secondary { background:#eee; color:#333; }
 </head>
 <body>
 
-<!-- Filtro inicial -->
 <div class="card">
   <h2>Filtrar Registos</h2>
   <label>Motorista:</label>
@@ -56,7 +55,6 @@ button.secondary { background:#eee; color:#333; }
 </div>
 
 <form id="formulario">
-  <!-- Cabeçalho -->
   <div class="card">
     <h2>Giro</h2>
     <div class="row">
@@ -78,7 +76,6 @@ button.secondary { background:#eee; color:#333; }
     </div>
   </div>
 
-  <!-- Serviço -->
   <div class="card servico" id="servicoContainer">
     <h2>Serviço</h2>
     <div class="linha novo">
@@ -91,7 +88,6 @@ button.secondary { background:#eee; color:#333; }
   </div>
   <button type="button" onclick="adicionarLinha()">+ Adicionar linha</button>
 
-  <!-- Final -->
   <div class="card">
     <h2>Final</h2>
     <div class="row">
@@ -101,7 +97,6 @@ button.secondary { background:#eee; color:#333; }
     </div>
   </div>
 
-  <!-- Abastecimentos -->
   <div class="card">
     <h2>Abastecimentos</h2>
     <div class="row">
@@ -110,7 +105,6 @@ button.secondary { background:#eee; color:#333; }
     </div>
   </div>
 
-  <!-- Equipamento -->
   <div class="card">
     <h2>Equipamento</h2>
     <div class="checkboxes">
@@ -131,7 +125,7 @@ button.secondary { background:#eee; color:#333; }
 </form>
 
 <script>
-const scriptURL = "https://script.google.com/macros/s/AKfycbyPz3lPDX92vBtrzPghgNjA-quAi2ap0WANOUoGR0IZZyhtimJ_c8L3FtY5eQJkkNCn/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycbxBfHfrbRr4yBdQqnO-tbPg__wtHnXMluzMqcihF4hlrPUJ8iWj0-8tuHQ8cNvMzMJk/exec";
 
 document.getElementById("data").valueAsDate = new Date();
 document.getElementById("Motorista").value = document.getElementById("motorista").value;
@@ -150,17 +144,20 @@ function adicionarLinha(){
   container.appendChild(div);
 }
 
-function carregar(){
+async function carregar(){
   const motorista = document.getElementById("motorista").value;
   const data = document.getElementById("data").value;
   document.getElementById("Motorista").value = motorista;
 
-  fetch(`${scriptURL}?motorista=${encodeURIComponent(motorista)}&data=${encodeURIComponent(data)}`)
-    .then(r => r.json())
-    .then(dados => {
-      if(!dados || !dados.length){ alert("Nenhum registo encontrado."); return; }
-      const d = dados[0];
+  try {
+    const res = await fetch(`${scriptURL}?motorista=${encodeURIComponent(motorista)}&data=${encodeURIComponent(data)}`);
+    const dados = await res.json();
 
+    const listaMatriculas = new Set();
+    const listaReboques = new Set();
+
+    if(dados.length>0){
+      const d = dados[0];
       document.getElementById("Km início").value=d["Km início"]||"";
       document.getElementById("Hora início").value=d["Hora início"]||"";
       document.getElementById("Km saída").value=d["Km saída"]||"";
@@ -171,6 +168,13 @@ function carregar(){
       document.getElementById("Km descarga").value=d["Km descarga"]||"";
       document.getElementById("Serviço OK").checked=d["Serviço OK"]==="✓";
 
+      // Adiciona matrículas e reboques ao histórico
+      dados.forEach(x=>{
+        if(x["Matrícula"]) listaMatriculas.add(x["Matrícula"]);
+        if(x["Reboque"]) listaReboques.add(x["Reboque"]);
+      });
+
+      // Serviço
       const servContainer = document.getElementById("servicoContainer");
       servContainer.innerHTML = '<h2>Serviço</h2>';
       if(d["Serviço"]){
@@ -190,11 +194,22 @@ function carregar(){
           });
         }catch(e){}
       }
-    })
-    .catch(err=>alert("Erro ao carregar: "+err));
+    }
+
+    // Atualiza datalist com histórico
+    const dataM = document.getElementById("listaMatriculas");
+    dataM.innerHTML = "";
+    listaMatriculas.forEach(x=>dataM.innerHTML+=`<option value="${x}">`);
+    const dataR = document.getElementById("listaReboques");
+    dataR.innerHTML = "";
+    listaReboques.forEach(x=>dataR.innerHTML+=`<option value="${x}">`);
+
+  } catch(e){
+    alert("Erro ao carregar: "+e);
+  }
 }
 
-function guardar(){
+async function guardar(){
   const motorista = document.getElementById("Motorista").value;
   const data = document.getElementById("data").value;
 
@@ -215,27 +230,29 @@ function guardar(){
   const servicos = [];
   document.querySelectorAll("#servicoContainer .linha").forEach(div=>{
     const s = {
-      NEI: div.querySelector(".nei").value,
-      Cliente: div.querySelector(".cliente").value,
-      Km: div.querySelector(".kmchegada").value,
-      HoraChegada: div.querySelector(".horachegada").value,
-      HoraSaida: div.querySelector(".horasaida").value
+      NEI: div.querySelector(".nei")?.value || "",
+      Cliente: div.querySelector(".cliente")?.value || "",
+      Km: div.querySelector(".kmchegada")?.value || "",
+      HoraChegada: div.querySelector(".horachegada")?.value || "",
+      HoraSaida: div.querySelector(".horasaida")?.value || ""
     };
     if(s.NEI) servicos.push(s);
   });
   payload["Serviço"] = JSON.stringify(servicos);
 
-  fetch(scriptURL,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify(payload)
-  })
-  .then(r=>r.json())
-  .then(d=>{
-    alert("Registo guardado com sucesso!");
-    carregar();
-  })
-  .catch(err=>alert("Erro ao guardar: "+err));
+  try{
+    const res = await fetch(scriptURL,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(payload)
+    });
+    const r = await res.json();
+    if(r.status==="ok"){ 
+      alert("Registo guardado com sucesso!"); 
+      // Atualiza histórico de matrículas/reboques
+      carregar(); 
+    }
+  }catch(e){ alert("Erro ao guardar: "+e); }
 }
 </script>
 </body>
