@@ -7,11 +7,12 @@
 <style>
   :root {
     --primary: #2563eb;
-    --primary-hover: #1d4ed8;
-    --bg: #f8fafc;
+    --primary-hover: #1e40af;
+    --bg: #f1f5f9;
     --card: #ffffff;
-    --border: #e5e7eb;
-    --radius: 12px;
+    --border: #e2e8f0;
+    --radius: 14px;
+    --shadow: 0 4px 12px rgba(0,0,0,0.05);
   }
 
   * { box-sizing: border-box; }
@@ -19,14 +20,14 @@
   body {
     font-family: 'Inter', Arial, sans-serif;
     background: var(--bg);
-    color: #111;
+    color: #111827;
     margin: 0;
     padding: 0;
   }
 
   header {
     background: var(--primary);
-    color: white;
+    color: #fff;
     text-align: center;
     padding: 1rem;
     font-size: 1.4rem;
@@ -35,7 +36,7 @@
   }
 
   main {
-    max-width: 720px;
+    max-width: 800px;
     margin: 2rem auto;
     padding: 1rem;
   }
@@ -52,9 +53,9 @@
     padding: 10px;
     border-radius: var(--radius);
     cursor: pointer;
-    background: #e5e7eb;
+    background: #e2e8f0;
     font-weight: 500;
-    transition: background 0.3s, color 0.3s;
+    transition: all 0.3s;
   }
 
   .tab.active {
@@ -63,73 +64,94 @@
   }
 
   .view {
+    display: none;
     background: var(--card);
     padding: 1.5rem;
     border-radius: var(--radius);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    box-shadow: var(--shadow);
+    animation: fadeIn 0.3s ease;
   }
 
-  input, textarea, select, button {
+  .view.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  input, select, textarea, button {
     width: 100%;
     padding: 10px;
     margin-bottom: 12px;
     border-radius: 8px;
     border: 1px solid var(--border);
     font-size: 1rem;
-    transition: border 0.2s, box-shadow 0.2s;
-  }
-
-  input:focus, textarea:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(37,99,235,0.2);
   }
 
   button {
     background: var(--primary);
-    color: white;
+    color: #fff;
     border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+
+  button:hover { background: var(--primary-hover); }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1rem;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem;
+    position: relative;
+  }
+
+  .card h3 {
+    margin-top: 0;
+    font-size: 1.1rem;
+    color: var(--primary);
+  }
+
+  .card p { margin: 4px 0; font-size: 0.95rem; }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .btn-edit, .btn-delete {
+    flex: 1;
+    border: none;
+    border-radius: 6px;
+    padding: 8px;
     font-weight: 600;
     cursor: pointer;
   }
 
-  button:hover {
-    background: var(--primary-hover);
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
-  }
-
-  th, td {
-    padding: 10px;
-    border-bottom: 1px solid var(--border);
-    text-align: left;
-  }
-
-  th {
-    background: #f1f5f9;
-    font-weight: 600;
-  }
-
-  tr:hover td {
-    background: #f9fafb;
-  }
+  .btn-edit { background: #3b82f6; color: white; }
+  .btn-edit:hover { background: #2563eb; }
+  .btn-delete { background: #ef4444; color: white; }
+  .btn-delete:hover { background: #dc2626; }
 
   @media (max-width: 600px) {
-    header { font-size: 1.2rem; }
     main { padding: 0.5rem; }
-    .view { padding: 1rem; }
+    .card { font-size: 0.95rem; }
   }
 </style>
 </head>
 <body>
+
 <header>🚛 Folha de Giro Digital</header>
 
 <main>
-  <!-- Tabs -->
   <div class="tabs">
     <div class="tab active" onclick="showTab('novo')">Novo Giro</div>
     <div class="tab" onclick="showTab('ver')">Ver / Editar</div>
@@ -138,12 +160,27 @@
   <!-- NOVO GIRO -->
   <div id="novo" class="view active">
     <form id="formGiro">
+      <input type="hidden" name="rowId">
       <label>Data</label>
       <input type="date" name="data" required>
       <label>Motorista</label>
-      <input type="text" name="motorista" required>
+      <select name="motorista" required>
+        <option value="">-- Selecionar --</option>
+        <option>VASCO LOPES</option>
+        <option>LUIS DUARTE</option>
+        <option>NELSON COSTA</option>
+        <option>VITOR CABEDAL</option>
+      </select>
       <label>Matrícula Viatura</label>
-      <input type="text" name="matricula">
+      <select name="matricula">
+        <option value="">-- Selecionar --</option>
+        <option>AA-84-GG</option>
+        <option>11-ZH-37</option>
+        <option>AL-57-LD</option>
+        <option>BG-02-BS</option>
+        <option>61-QG-05</option>
+        <option>92-VI-02</option>
+      </select>
       <label>Matrícula Reboque</label>
       <input type="text" name="reboque">
       <label>Hora Saída</label>
@@ -162,86 +199,106 @@
       <input type="text" name="ne">
       <label>Observações</label>
       <textarea name="obs" rows="3"></textarea>
-      <button type="submit">💾 Gravar Giro</button>
+      <button type="submit">💾 Gravar</button>
     </form>
   </div>
 
   <!-- VER / EDITAR -->
-  <div id="ver" class="view" style="display:none;">
-    <form id="filtroForm" style="margin-bottom: 1rem;">
-      <input type="text" id="fMotorista" placeholder="Motorista" required>
+  <div id="ver" class="view">
+    <form id="filtroForm" style="margin-bottom:1rem;">
+      <select id="fMotorista" required>
+        <option value="">-- Motorista --</option>
+        <option>VASCO LOPES</option>
+        <option>LUIS DUARTE</option>
+        <option>NELSON COSTA</option>
+        <option>VITOR CABEDAL</option>
+      </select>
       <input type="date" id="fData">
       <button type="submit">🔍 Filtrar</button>
     </form>
-
-    <table id="tabela">
-      <thead>
-        <tr>
-          <th>Data</th>
-          <th>Motorista</th>
-          <th>Cliente</th>
-          <th>Local</th>
-          <th>Km</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td colspan="5" style="text-align:center;">Sem dados</td></tr>
-      </tbody>
-    </table>
+    <div class="cards" id="listaGiros"></div>
   </div>
 </main>
 
 <script>
 const scriptURL = "https://script.google.com/macros/s/AKfycbyqaCkB_6oO1Cw2Pza7wEko3EKp0lmYleGOEOE8k07IxEk6VtOLkNpxzdA4VaWRyzQW/exec";
 
-// --- Alternar tabs ---
+// Alternar tabs
 function showTab(id) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelector(`.tab[onclick="showTab('${id}')"]`).classList.add('active');
-  document.getElementById(id).style.display = 'block';
+  document.getElementById(id).classList.add('active');
 }
 
-// --- Gravar novo giro ---
+// Preenche data de hoje
+document.querySelector('[name="data"]').valueAsDate = new Date();
+document.getElementById('fData').valueAsDate = new Date();
+
+let editIndex = null;
+
+// Gravar ou atualizar
 document.getElementById('formGiro').addEventListener('submit', async e => {
   e.preventDefault();
   const form = e.target;
-  const data = Object.fromEntries(new FormData(form).entries());
-  const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify(data) });
+  const dados = Object.fromEntries(new FormData(form).entries());
+  const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify(dados) });
   const json = await res.json();
-  alert(json.status === 'success' ? '✅ Giro gravado com sucesso!' : '❌ Erro ao gravar.');
+  alert(json.status === 'success' ? (editIndex ? '✅ Giro atualizado!' : '✅ Giro gravado!') : '❌ Erro ao gravar.');
   form.reset();
+  editIndex = null;
+  document.querySelector('[name="data"]').valueAsDate = new Date();
 });
 
-// --- Data atual por defeito ---
-document.getElementById('fData').valueAsDate = new Date();
-document.querySelector('[name="data"]').valueAsDate = new Date();
-
-// --- Filtrar giros ---
+// Filtrar giros
 document.getElementById('filtroForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const motorista = document.getElementById('fMotorista').value.trim();
+  const motorista = document.getElementById('fMotorista').value;
   const data = document.getElementById('fData').value;
   const url = `${scriptURL}?motorista=${encodeURIComponent(motorista)}&data=${encodeURIComponent(data)}`;
   const res = await fetch(url);
   const giros = await res.json();
+  mostrarGiros(giros);
+});
 
-  const tbody = document.querySelector('#tabela tbody');
+// Mostrar cartões
+function mostrarGiros(giros) {
+  const lista = document.getElementById('listaGiros');
   if (!giros.length) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Sem registos encontrados</td></tr>`;
+    lista.innerHTML = `<p style="text-align:center;">Sem registos encontrados</p>`;
     return;
   }
-
-  tbody.innerHTML = giros.map(g => `
-    <tr>
-      <td>${g.Data || ''}</td>
-      <td>${g.Motorista || ''}</td>
-      <td>${g.Cliente || ''}</td>
-      <td>${g["Local Carga"] || ''}</td>
-      <td>${g["Km Início"] || ''} → ${g["Km Fim"] || ''}</td>
-    </tr>
+  lista.innerHTML = giros.map((g, i) => `
+    <div class="card">
+      <h3>${g.Cliente || 'Sem Cliente'}</h3>
+      <p><strong>Data:</strong> ${g.Data || ''}</p>
+      <p><strong>Motorista:</strong> ${g.Motorista || ''}</p>
+      <p><strong>Local:</strong> ${g["Local Carga"] || ''}</p>
+      <p><strong>Km:</strong> ${g["Km Início"] || ''} → ${g["Km Fim"] || ''}</p>
+      <div class="actions">
+        <button class="btn-edit" onclick='editarGiro(${JSON.stringify(g)})'>Editar</button>
+        <button class="btn-delete" onclick='eliminarGiro(${i})'>Eliminar</button>
+      </div>
+    </div>
   `).join('');
-});
+}
+
+// Editar
+function editarGiro(g) {
+  showTab('novo');
+  const form = document.getElementById('formGiro');
+  Object.keys(g).forEach(k => {
+    const campo = form.querySelector(`[name="${k}"]`);
+    if (campo) campo.value = g[k];
+  });
+  editIndex = g.rowId || true;
+}
+
+// Eliminar (nota: Apps Script precisa suporte posterior)
+async function eliminarGiro(i) {
+  if (!confirm('Tem a certeza que quer eliminar este registo?')) return;
+  alert('🗑️ Registo eliminado (simulado – eliminar real requer função no Apps Script).');
+}
 </script>
 </body>
 </html>
