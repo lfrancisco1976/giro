@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registo Diário de Giros</title>
+<style>
+:root {
+  --cor-principal: #0077cc;
+  --fundo: #f9f9fb;
+  --cartao: #fff;
+  --texto: #222;
+  --servico-bg: #e6f7ff;
+}
+
+body { font-family: "Inter", Arial, sans-serif; background: var(--fundo); color: var(--texto); margin:0; padding:12px; }
+h2 { font-size:1.4rem; margin-bottom:10px; }
+.card { background:var(--cartao); border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.1); padding:16px; margin-bottom:16px; }
+.card.servico { background: var(--servico-bg); }
+label { display:block; margin-top:8px; font-weight:500; }
+input, select { width:100%; padding:8px; margin-top:4px; border:1px solid #ccc; border-radius:8px; font-size:1rem; }
+.row { display:flex; gap:10px; flex-wrap:wrap; }
+.row>div { flex:1 1 30%; min-width:120px; }
+button { background:var(--cor-principal); color:white; border:none; padding:10px 14px; border-radius:8px; font-size:1rem; margin-top:12px; cursor:pointer; }
+button.secondary { background:#eee; color:#333; }
+.checkboxes { display:flex; flex-wrap:wrap; gap:8px; }
+.checkboxes label {
+  flex: 1 1 calc(33% - 8px);
+  display: flex;
+  align-items: center;
+  gap:4px;
+  font-size:0.9rem;
+  min-width:90px;
+  word-break: break-word;
+}
+.linha { border-top:1px solid #ddd; margin-top:10px; padding-top:10px; }
+.novo { border-left:4px solid var(--cor-principal); }
+.guardado { border-left:4px solid #aaa; opacity:0.8; }
+@media(max-width:600px){ .row>div { flex:1 1 100%; } }
+</style>
+</head>
+<body>
+
+<!-- Filtro inicial -->
+<div class="card">
+  <h2>Filtrar Registos</h2>
+  <label>Motorista:</label>
+  <select id="motorista">
+    <option>VASCO LOPES</option>
+    <option>LUIS DUARTE</option>
+    <option>NELSON COSTA</option>
+    <option>VITOR CABEDAL</option>
+  </select>
+  <label>Data:</label>
+  <input type="date" id="data">
+  <button onclick="carregar()">🔍 Carregar</button>
+</div>
+
+<form id="formulario">
+  <!-- Cabeçalho -->
+  <div class="card">
+    <h2>Giro</h2>
+    <div class="row">
+      <div><label>KM início do dia</label><input id="Km início"></div>
+      <div><label>Hora início</label><input type="time" id="Hora início"></div>
+    </div>
+    <div class="row">
+      <div><label>KM saída do dia</label><input id="Km saída"></div>
+      <div><label>Hora fim</label><input type="time" id="Hora fim"></div>
+    </div>
+    <div class="row">
+      <div><label>Matrícula</label><input id="Matrícula" list="listaMatriculas"></div>
+      <div><label>Reboque</label><input id="Reboque" list="listaReboques"></div>
+      <datalist id="listaMatriculas"></datalist>
+      <datalist id="listaReboques"></datalist>
+    </div>
+    <div class="row">
+      <div><label>Motorista</label><input id="Motorista" readonly></div>
+    </div>
+  </div>
+
+  <!-- Serviço -->
+  <div class="card servico" id="servicoContainer">
+    <h2>Serviço</h2>
+    <div class="linha novo">
+      <label>NEI</label><input class="nei">
+      <label>Cliente</label><input class="cliente">
+      <label>Km chegada</label><input class="kmchegada">
+      <label>Hora chegada</label><input type="time" class="horachegada">
+      <label>Hora saída</label><input type="time" class="horasaida">
+    </div>
+  </div>
+  <button type="button" onclick="adicionarLinha()">+ Adicionar linha</button>
+
+  <!-- Final -->
+  <div class="card">
+    <h2>Final</h2>
+    <div class="row">
+      <div><label>Hora descarga</label><input type="time" id="Hora descarga"></div>
+      <div><label>Km descarga</label><input id="Km descarga"></div>
+      <div><label>Serviço OK</label><input type="checkbox" id="Serviço OK"></div>
+    </div>
+  </div>
+
+  <!-- Abastecimentos -->
+  <div class="card">
+    <h2>Abastecimentos</h2>
+    <div class="row">
+      <div><label>Data</label><input type="date" id="Abastecimento Data"></div>
+      <div><label>Km’s</label><input id="Abastecimento Km"></div>
+    </div>
+  </div>
+
+  <!-- Equipamento -->
+  <div class="card">
+    <h2>Equipamento</h2>
+    <div class="checkboxes">
+      <label><input type="checkbox" id="Capacete"> Capacete</label>
+      <label><input type="checkbox" id="Óculos"> Óculos</label>
+      <label><input type="checkbox" id="Máscaras"> Máscaras</label>
+      <label><input type="checkbox" id="Macaco Descartável"> Macaco Descartável</label>
+      <label><input type="checkbox" id="Caixa Primeiros Socorros"> Caixa Primeiros Socorros</label>
+      <label><input type="checkbox" id="Luvas"> Luvas</label>
+      <label><input type="checkbox" id="Botas"> Botas</label>
+      <label><input type="checkbox" id="Mangueira"> Mangueira</label>
+      <label><input type="checkbox" id="Acessórios"> Acessórios</label>
+      <label><input type="checkbox" id="KAD"> KAD</label>
+    </div>
+  </div>
+
+  <button type="button" onclick="guardar()">💾 Guardar</button>
+</form>
+
+<script>
+const scriptURL = "https://script.google.com/macros/s/AKfycbyPz3lPDX92vBtrzPghgNjA-quAi2ap0WANOUoGR0IZZyhtimJ_c8L3FtY5eQJkkNCn/exec";
+
+document.getElementById("data").valueAsDate = new Date();
+document.getElementById("Motorista").value = document.getElementById("motorista").value;
+
+// Adiciona nova linha de serviço
+function adicionarLinha(){
+  const container = document.getElementById("servicoContainer");
+  const div = document.createElement("div");
+  div.className = "linha novo";
+  div.innerHTML = `
+    <label>NEI</label><input class="nei">
+    <label>Cliente</label><input class="cliente">
+    <label>Km chegada</label><input class="kmchegada">
+    <label>Hora chegada</label><input type="time" class="horachegada">
+    <label>Hora saída</label><input type="time" class="horasaida">
+  `;
+  container.appendChild(div);
+}
+
+// Carregar registos guardados
+function carregar(){
+  const motorista = document.getElementById("motorista").value;
+  const data = document.getElementById("data").value;
+  document.getElementById("Motorista").value = motorista;
+  
+  fetch(`${scriptURL}?motorista=${encodeURIComponent(motorista)}&data=${encodeURIComponent(data)}`)
+    .then(r => r.json())
+    .then(dados => {
+      if(!dados || !dados.length){ alert("Nenhum registo encontrado."); return; }
+      const d = dados[0];
+      
+      // Cabeçalho
+      document.getElementById("Km início").value=d["Km início"]||"";
+      document.getElementById("Hora início").value=d["Hora início"]||"";
+      document.getElementById("Km saída").value=d["Km saída"]||"";
+      document.getElementById("Hora fim").value=d["Hora fim"]||"";
+      document.getElementById("Matrícula").value=d["Matrícula"]||"";
+      document.getElementById("Reboque").value=d["Reboque"]||"";
+      document.getElementById("Hora descarga").value=d["Hora descarga"]||"";
+      document.getElementById("Km descarga").value=d["Km descarga"]||"";
+      document.getElementById("Serviço OK").checked=d["Serviço OK"]==="✓";
+
+      // Serviço existente
+      const servContainer = document.getElementById("servicoContainer");
+      servContainer.innerHTML = '<h2>Serviço</h2>';
+      if(d["Serviço"]){
+        try{
+          const servicos = JSON.parse(d["Serviço"]);
+          servicos.forEach(s=>{
+            const div = document.createElement("div");
+            div.className = "linha guardado";
+            div.innerHTML = `
+              <label>NEI</label><input class="nei" value="${s.NEI}" readonly>
+              <label>Cliente</label><input class="cliente" value="${s.Cliente}" readonly>
+              <label>Km chegada</label><input class="kmchegada" value="${s.Km}" readonly>
+              <label>Hora chegada</label><input class="horachegada" value="${s.HoraChegada}" readonly>
+              <label>Hora saída</label><input class="horasaida" value="${s.HoraSaida}" readonly>
+            `;
+            servContainer.appendChild(div);
+          });
+        }catch(e){}
+      }
+
+      alert("Registo carregado.");
+    })
+    .catch(err=>alert("Erro ao carregar: "+err));
+}
+
+// Guardar registo
+function guardar(){
+  const motorista = document.getElementById("Motorista").value;
+  const data = document.getElementById("data").value;
+
+  // Cabeçalho
+  const payload = {
+    "Data": data,
+    "Motorista": motorista,
+    "Km início": document.getElementById("Km início").value,
+    "Hora início": document.getElementById("Hora início").value,
+    "Km saída": document.getElementById("Km saída").value,
+    "Hora fim": document.getElementById("Hora fim").value,
+    "Matrícula": document.getElementById("Matrícula").value,
+    "Reboque": document.getElementById("Reboque").value,
+    "Hora descarga": document.getElementById("Hora descarga").value
