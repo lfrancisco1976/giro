@@ -3,683 +3,400 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registo Diário de Giros - Transporte</title>
-    <!-- Tailwind CSS CDN -->
+    <title>EGEO - Folha de Giro Digital</title>
+    <!-- Carrega Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Configuração de Fonte Global */
-        :root {
-            font-family: 'Inter', sans-serif;
+        /* Estilo personalizado para botões no formulário */
+        .btn-primary {
+            @apply bg-blue-600 text-white hover:bg-blue-700 transition duration-150 ease-in-out font-bold py-2 px-4 rounded-lg shadow-md;
         }
-        /* Estilos personalizados para o botão de status */
-        .status-ok { background-color: #10B981; color: white; }
-        .status-nok { background-color: #EF4444; color: white; }
-        .btn-primary { transition: all 0.2s ease-in-out; }
-        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-        .giro-line-input {
-            margin-bottom: 0.75rem;
+        .btn-secondary {
+            @apply bg-gray-300 text-gray-800 hover:bg-gray-400 transition duration-150 ease-in-out font-bold py-2 px-4 rounded-lg shadow-md;
         }
-        /* Fixa o header da tabela para melhor UX */
-        #recordsTable thead th {
-            position: sticky;
+        .input-field {
+            @apply mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm;
+        }
+        /* Estilo para a secção de carregamento */
+        .loading-overlay {
+            position: fixed;
             top: 0;
-            background-color: #F3F4F6;
-            z-index: 10;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
         }
     </style>
 </head>
-<body class="bg-gray-50 p-4 sm:p-8">
+<body class="bg-gray-100 font-sans p-4 sm:p-8">
 
-    <div class="max-w-6xl mx-auto">
-        <header class="text-center mb-10 p-4 bg-white rounded-xl shadow-lg">
-            <h1 class="text-3xl font-extrabold text-gray-800">Registo Diário de Giros</h1>
-            <p class="text-gray-500 mt-2">Gestão de Frotas e Serviços de Transporte</p>
+    <!-- Configuração do Google Apps Script URL -->
+    <script>
+        // URL da Aplicação Web do Google Apps Script fornecida pelo utilizador
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzef58moz0jexj2zewtchBZigHjhWDT1_Rd5Rgc2N5nWtBj2-zbYadNw6wDjdA8GOxX/exec';
+        let currentRecordId = null; // Variável para armazenar o ID do registo atualmente carregado (para edição)
+    </script>
+
+    <div id="loading" class="loading-overlay hidden">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <p class="ml-3 text-lg text-blue-600">A processar...</p>
+    </div>
+
+    <div class="max-w-4xl mx-auto bg-white p-6 sm:p-10 rounded-xl shadow-2xl">
+        
+        <header class="mb-8 border-b pb-4">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900">EGEO - Folha de Giro Digital</h1>
+            <p class="text-gray-500 mt-2">IMP.096 | Versão Digital Substituta</p>
         </header>
 
-        <!-- Navegação entre Formulário e Visualização -->
-        <div class="flex justify-center space-x-4 mb-8">
-            <button id="showFormBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition duration-200">
-                Novo Registo / Editar
-            </button>
-            <button id="showViewBtn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg shadow-md transition duration-200">
-                Visualizar Registos
-            </button>
-        </div>
+        <!-- Área de Mensagens de Status -->
+        <div id="message-area" class="mb-6 hidden p-4 rounded-lg text-sm transition-all duration-300" role="alert"></div>
 
-        <!-- Mensagem de feedback (Modal customizado) -->
-        <div id="messageBox" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden items-center justify-center p-4 z-50">
-            <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
-                <p id="messageText" class="text-lg font-semibold text-gray-800 mb-4"></p>
-                <div class="flex justify-end">
-                    <button id="closeMessageBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">
-                        OK
-                    </button>
-                </div>
+        <!-- Secção de Pesquisa/Edição -->
+        <section class="mb-10 p-6 bg-yellow-50 rounded-lg border-l-4 border-yellow-500 shadow-inner">
+            <h2 class="text-xl font-semibold text-yellow-800 mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                Pesquisar e Carregar Registo (Edição)
+            </h2>
+            <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+                <input type="text" id="search-id" placeholder="ID_Registo (ex: R-1678888888888)" class="input-field flex-grow" onfocus="clearMessage()">
+                <button type="button" class="btn-secondary whitespace-nowrap" onclick="searchRecord()">
+                    Carregar Registo
+                </button>
             </div>
-        </div>
+            <p class="text-xs text-yellow-700 mt-2">Deixe o campo ID_Registo vazio e pressione 'Novo Registo' para limpar o formulário.</p>
+        </section>
 
-        <!-- Conteúdo Principal -->
-        <div id="appContent">
+
+        <!-- Formulário Principal -->
+        <form id="giro-form" onsubmit="event.preventDefault(); submitForm()">
+            <input type="hidden" id="ID_Registo" name="ID_Registo" value="">
             
-            <!-- 1. FORMULÁRIO (Padrão: Visível) -->
-            <div id="formContainer" class="bg-white p-6 sm:p-8 rounded-xl shadow-xl">
-                <h2 id="formTitle" class="text-2xl font-semibold text-gray-700 mb-6">Novo Registo de Serviço</h2>
+            <h2 class="text-2xl font-bold text-gray-700 mb-6" id="form-title">Novo Registo</h2>
+
+            <!-- Informações Gerais (Topo do PDF) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 p-4 bg-gray-50 rounded-lg">
+                <div class="col-span-1 md:col-span-3">
+                    <label for="Data" class="block text-sm font-medium text-gray-700">Data *</label>
+                    <input type="date" id="Data" name="Data" class="input-field" required>
+                </div>
                 
-                <form id="girosForm" class="space-y-6">
-
-                    <!-- Campos de ID Ocultos -->
-                    <input type="hidden" id="ID_Registo" value="">
-
-                    <!-- Bloco de Informações Principais -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 border-b pb-6 mb-6">
-                        <div class="col-span-1">
-                            <label for="Data" class="block text-sm font-medium text-gray-700">Data <span class="text-red-500">*</span>:</label>
-                            <input type="date" id="Data" name="Data" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
-                        </div>
-                        <div class="col-span-1">
-                            <label for="Matricula" class="block text-sm font-medium text-gray-700">Matrícula <span class="text-red-500">*</span>:</label>
-                            <input type="text" id="Matricula" name="Matricula" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border uppercase">
-                        </div>
-                         <div class="col-span-1">
-                            <label for="Motorista" class="block text-sm font-medium text-gray-700">Motorista <span class="text-red-500">*</span>:</label>
-                            <input type="text" id="Motorista" name="Motorista" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
-                        </div>
-                        <div class="col-span-1">
-                            <label for="Reboque" class="block text-sm font-medium text-gray-700">Reboque:</label>
-                            <input type="text" id="Reboque" name="Reboque" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border uppercase">
-                        </div>
-                        <div class="col-span-1">
-                            <label for="KM_Inicio_Dia" class="block text-sm font-medium text-gray-700">KM Início do Dia:</label>
-                            <input type="number" id="KM_Inicio_Dia" name="KM_Inicio_Dia" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
-                        </div>
-                        <div class="col-span-1">
-                            <label for="Hora_Inicio" class="block text-sm font-medium text-gray-700">Hora Início:</label>
-                            <input type="time" id="Hora_Inicio" name="Hora_Inicio" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
-                        </div>
-                        <div class="col-span-1">
-                            <label for="KM_Saida_Dia" class="block text-sm font-medium text-gray-700">KM Saída do Dia:</label>
-                            <input type="number" id="KM_Saida_Dia" name="KM_Saida_Dia" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
-                        </div>
-                        <div class="col-span-1">
-                            <label for="Hora_Fim" class="block text-sm font-medium text-gray-700">Hora Fim:</label>
-                            <input type="time" id="Hora_Fim" name="Hora_Fim" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
-                        </div>
-                    </div>
-
-                    <!-- Bloco de Giros/Serviços (Dinâmico) -->
-                    <div class="mb-6 border-b pb-6">
-                        <h3 class="text-xl font-semibold text-gray-700 mb-4 flex justify-between items-center">
-                            Detalhes dos Giros
-                            <button type="button" id="addGiroBtn" class="bg-green-500 hover:bg-green-600 text-white text-sm py-1 px-3 rounded-lg shadow transition duration-200">
-                                + Adicionar Giro
-                            </button>
-                        </h3>
-                        <div id="girosContainer" class="space-y-4">
-                            <!-- Linha de Giro 1 (Template) -->
-                            <div id="giroLine-1" class="giro-line p-4 border border-gray-200 rounded-lg bg-gray-50 grid grid-cols-2 md:grid-cols-5 gap-4">
-                                <!-- Conteúdo preenchido pelo JS -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Bloco de Finalização e Status -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 border-b pb-6 mb-6">
-                        <div class="col-span-1">
-                            <label for="Hora_Descarga" class="block text-sm font-medium text-gray-700">Hora Descarga:</label>
-                            <input type="time" id="Hora_Descarga" name="Hora_Descarga" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
-                        </div>
-                        <div class="col-span-1">
-                            <label for="KM_Descarga" class="block text-sm font-medium text-gray-700">KM Descarga:</label>
-                            <input type="number" id="KM_Descarga" name="KM_Descarga" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
-                        </div>
-                        <div class="col-span-1">
-                            <label for="Servico_Status" class="block text-sm font-medium text-gray-700">Serviço OK / NOK:</label>
-                            <select id="Servico_Status" name="Servico_Status" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border bg-white">
-                                <option value="">Selecione...</option>
-                                <option value="OK">OK (Pisco)</option>
-                                <option value="NOK">NOK</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Bloco de Abastecimentos -->
-                    <div class="border-b pb-6 mb-6">
-                        <h3 class="text-xl font-semibold text-gray-700 mb-4">a. Abastecimentos</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label for="Abastecimento_Data" class="block text-sm font-medium text-gray-700">Data Abastecimento:</label>
-                                <input type="date" id="Abastecimento_Data" name="Abastecimento_Data" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
-                            </div>
-                            <div>
-                                <label for="Abastecimento_KMs" class="block text-sm font-medium text-gray-700">Km's:</label>
-                                <input type="number" id="Abastecimento_KMs" name="Abastecimento_KMs" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Bloco de Equipamento (Caixas de verificação múltipla) -->
-                    <div>
-                        <h3 class="text-xl font-semibold text-gray-700 mb-4">b. Equipamento (Caixas de verificação)</h3>
-                        <div id="equipamentoCheckboxes" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                            <!-- Checkboxes geradas pelo JS para facilitar o mapeamento -->
-                        </div>
-                    </div>
-
-                    <!-- Botão de Submissão -->
-                    <div class="pt-6">
-                        <button type="submit" id="submitBtn" class="w-full btn-primary bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg">
-                            <span id="submitBtnText">Registar Serviço</span>
-                            <span id="loadingIndicator" class="hidden ml-2">
-                                <!-- SVG de Loading Spin -->
-                                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                            </span>
-                        </button>
-                    </div>
-
-                </form>
+                <div>
+                    <label for="Matricula" class="block text-sm font-medium text-gray-700">Matrícula (Veículo) *</label>
+                    <input type="text" id="Matricula" name="Matricula" class="input-field" required>
+                </div>
+                <div>
+                    <label for="Reboque" class="block text-sm font-medium text-gray-700">Matrícula Reboque</label>
+                    <input type="text" id="Reboque" name="Reboque" class="input-field">
+                </div>
+                <div>
+                    <label for="Motorista" class="block text-sm font-medium text-gray-700">Motorista *</label>
+                    <input type="text" id="Motorista" name="Motorista" class="input-field" required>
+                </div>
+                <div>
+                    <label for="NEI" class="block text-sm font-medium text-gray-700">NEI / Cód. Produtor</label>
+                    <input type="text" id="NEI" name="NEI" class="input-field">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="Cliente" class="block text-sm font-medium text-gray-700">Cliente</label>
+                    <input type="text" id="Cliente" name="Cliente" class="input-field">
+                </div>
             </div>
 
-            <!-- 2. VISUALIZAÇÃO DE REGISTOS (Padrão: Oculto) -->
-            <div id="viewContainer" class="bg-white p-6 sm:p-8 rounded-xl shadow-xl hidden">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-6">Visualizar e Editar Registos</h2>
-
-                <!-- Filtros -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 border rounded-lg bg-gray-50">
-                    <div>
-                        <label for="filterMotorista" class="block text-sm font-medium text-gray-700">Filtrar Motorista:</label>
-                        <input type="text" id="filterMotorista" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
-                    </div>
-                    <div>
-                        <label for="filterData" class="block text-sm font-medium text-gray-700">Filtrar Data (Início):</label>
-                        <input type="date" id="filterData" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
-                    </div>
-                    <div class="flex items-end">
-                        <button id="filterBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-lg shadow transition duration-200">
-                            Pesquisar
-                        </button>
-                    </div>
+            <!-- KM e Horas do Dia (SAÍDA/FIM) -->
+            <h3 class="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">Controlo Diário da Viatura</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                <div>
+                    <label for="KM_Inicio_Dia" class="block text-sm font-medium text-gray-700">KM Início do Dia</label>
+                    <input type="number" step="0.01" id="KM_Inicio_Dia" name="KM_Inicio_Dia" class="input-field">
                 </div>
-
-                <!-- Tabela de Registos -->
-                <div class="overflow-x-auto border rounded-lg shadow">
-                    <table id="recordsTable" class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motorista</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matrícula</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KM Início</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recordsBody" class="bg-white divide-y divide-gray-200">
-                            <tr>
-                                <td colspan="6" class="p-4 text-center text-gray-500">Use os filtros para carregar os registos.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div>
+                    <label for="Hora_Inicio" class="block text-sm font-medium text-gray-700">Hora Início do Dia</label>
+                    <input type="time" id="Hora_Inicio" name="Hora_Inicio" class="input-field">
                 </div>
-
+                <div>
+                    <label for="KM_Saida_Dia" class="block text-sm font-medium text-gray-700">Km Saída do Dia (FIM)</label>
+                    <input type="number" step="0.01" id="KM_Saida_Dia" name="KM_Saida_Dia" class="input-field">
+                </div>
+                <div>
+                    <label for="Hora_Fim" class="block text-sm font-medium text-gray-700">Hora Fim do Dia</label>
+                    <input type="time" id="Hora_Fim" name="Hora_Fim" class="input-field">
+                </div>
             </div>
-        </div>
+            
+            <!-- Dados do Serviço/Giro (CARGA e DESCARGA) -->
+            <h3 class="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">Detalhes do Serviço (Giro)</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8 p-4 border rounded-lg">
+                <!-- Carga/Chegada -->
+                <div class="col-span-2">
+                    <p class="font-medium text-gray-800 mb-2">CHEGADA / CARGA</p>
+                    <label for="KM_Chegada" class="block text-xs font-medium text-gray-600">KM Chegada (Local de Carga)</label>
+                    <input type="number" step="0.01" id="KM_Chegada" name="KM_Chegada" class="input-field mb-2">
+
+                    <label for="Hora_Chegada" class="block text-xs font-medium text-gray-600">Hora Chegada (Local de Carga)</label>
+                    <input type="time" id="Hora_Chegada" name="Hora_Chegada" class="input-field mb-2">
+                    
+                    <label for="Hora_Saida" class="block text-xs font-medium text-gray-600">Hora Saída (Local de Carga)</label>
+                    <input type="time" id="Hora_Saida" name="Hora_Saida" class="input-field">
+                </div>
+
+                <!-- Descarga/Fim -->
+                <div class="col-span-2">
+                    <p class="font-medium text-gray-800 mb-2">SAÍDA / DESCARGA</p>
+                    <label for="KM_Descarga" class="block text-xs font-medium text-gray-600">KM Descarga</label>
+                    <input type="number" step="0.01" id="KM_Descarga" name="KM_Descarga" class="input-field mb-2">
+                    
+                    <label for="Hora_Descarga" class="block text-xs font-medium text-gray-600">Hora Descarga</label>
+                    <input type="time" id="Hora_Descarga" name="Hora_Descarga" class="input-field mb-2">
+
+                    <label for="Servico_Status" class="block text-xs font-medium text-gray-600">Serviço OK /NOK *</label>
+                    <select id="Servico_Status" name="Servico_Status" class="input-field" required>
+                        <option value="">Selecione</option>
+                        <option value="OK">OK</option>
+                        <option value="NOK">NOK</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Abastecimento -->
+            <h3 class="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">Registo de Abastecimento</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 p-4 bg-gray-50 rounded-lg">
+                <div>
+                    <label for="Abastecimento_Data" class="block text-sm font-medium text-gray-700">Data Abastecimento</label>
+                    <input type="date" id="Abastecimento_Data" name="Abastecimento_Data" class="input-field">
+                </div>
+                <div>
+                    <label for="Abastecimento_KMs" class="block text-sm font-medium text-gray-700">Km's Abastecimento</label>
+                    <input type="number" step="0.01" id="Abastecimento_KMs" name="Abastecimento_KMs" class="input-field">
+                </div>
+                <div>
+                    <label for="Abastecimento_Lts" class="block text-sm font-medium text-gray-700">Litros Abastecidos</label>
+                    <input type="number" step="0.01" id="Abastecimento_Lts" name="Abastecimento_Lts" class="input-field">
+                </div>
+            </div>
+
+            <!-- Equipamento (Checkboxes) -->
+            <h3 class="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">Equipamento em Falta (Verificação Diária)</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="flex items-center">
+                    <input id="equip-Capacete" type="checkbox" name="Equipamento" value="Capacete" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="equip-Capacete" class="ml-2 block text-sm text-gray-900">Capacete</label>
+                </div>
+                <div class="flex items-center">
+                    <input id="equip-Oculos" type="checkbox" name="Equipamento" value="Óculos / Máscaras" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="equip-Oculos" class="ml-2 block text-sm text-gray-900">Óculos / Máscaras</label>
+                </div>
+                <div class="flex items-center">
+                    <input id="equip-Macaco" type="checkbox" name="Equipamento" value="Macaco descartável" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="equip-Macaco" class="ml-2 block text-sm text-gray-900">Macaco descartável</label>
+                </div>
+                <div class="flex items-center">
+                    <input id="equip-PrimeirosSocorros" type="checkbox" name="Equipamento" value="Caixa Primeiros Socorros" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="equip-PrimeirosSocorros" class="ml-2 block text-sm text-gray-900">Caixa Primeiros Socorros</label>
+                </div>
+                <div class="flex items-center">
+                    <input id="equip-Luvas" type="checkbox" name="Equipamento" value="Luvas" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="equip-Luvas" class="ml-2 block text-sm text-gray-900">Luvas</label>
+                </div>
+                <div class="flex items-center">
+                    <input id="equip-Botas" type="checkbox" name="Equipamento" value="Botas" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="equip-Botas" class="ml-2 block text-sm text-gray-900">Botas</label>
+                </div>
+                <div class="flex items-center">
+                    <input id="equip-Mangueiras" type="checkbox" name="Equipamento" value="Mangueiras/Acessórios" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="equip-Mangueiras" class="ml-2 block text-sm text-gray-900">Mangueiras/Acessórios</label>
+                </div>
+                <div class="flex items-center">
+                    <input id="equip-KAD" type="checkbox" name="Equipamento" value="KAD" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="equip-KAD" class="ml-2 block text-sm text-gray-900">KAD</label>
+                </div>
+            </div>
+
+            <!-- Botão de Submissão -->
+            <div class="mt-8 pt-6 border-t flex justify-end">
+                <button type="submit" class="btn-primary w-full sm:w-auto" id="submit-button">
+                    <span id="submit-text">Adicionar Registo</span>
+                </button>
+            </div>
+        </form>
     </div>
 
     <script>
-        // *** 🔴 PASSO CRÍTICO: COLE A SUA URL AQUI E VERIFIQUE AS PERMISSÕES ***
-        // A sua URL deve começar com 'https://script.google.com/macros/s/...'
-        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzgG0N0KwvQ5UZP8NxpeAXODIAz3gdIAudXDFtW2RU2GEB8kx89CLEDmK3dsew9x9cd/exec';
-        
-        let giroLinhaCount = 1;
-        const EQUIPAMENTO_OPTIONS = [
-            "Capacete", "Óculos", "Máscaras", "Macaco Descartável", 
-            "Caixa Primeiros Socorros", "Luvas", "Botas", 
-            "Mangueira", "Acessórios", "KAD"
-        ];
-        
-        const ui = {
-            girosForm: document.getElementById('girosForm'),
-            girosContainer: document.getElementById('girosContainer'),
-            addGiroBtn: document.getElementById('addGiroBtn'),
-            submitBtn: document.getElementById('submitBtn'),
-            submitBtnText: document.getElementById('submitBtnText'),
-            loadingIndicator: document.getElementById('loadingIndicator'),
-            equipamentoCheckboxes: document.getElementById('equipamentoCheckboxes'),
-            formContainer: document.getElementById('formContainer'),
-            viewContainer: document.getElementById('viewContainer'),
-            showFormBtn: document.getElementById('showFormBtn'),
-            showViewBtn: document.getElementById('showViewBtn'),
-            formTitle: document.getElementById('formTitle'),
-            recordsTable: document.getElementById('recordsTable'),
-            recordsBody: document.getElementById('recordsBody'),
-            filterMotorista: document.getElementById('filterMotorista'),
-            filterData: document.getElementById('filterData'),
-            filterBtn: document.getElementById('filterBtn'),
-            messageBox: document.getElementById('messageBox'),
-            messageText: document.getElementById('messageText'),
-            closeMessageBtn: document.getElementById('closeMessageBtn'),
-        };
+        // Função para mostrar mensagens de feedback
+        function displayMessage(message, type = 'success') {
+            const area = document.getElementById('message-area');
+            area.textContent = message;
+            area.className = 'mb-6 p-4 rounded-lg text-sm transition-all duration-300';
+            area.classList.remove('hidden');
 
-        // --- Funções de UI/UX ---
-
-        /** Exibe a caixa de mensagem personalizada. */
-        function showMessage(text, isError = false) {
-            ui.messageText.textContent = text;
-            ui.messageText.className = isError ? 'text-lg font-semibold text-red-600 mb-4' : 'text-lg font-semibold text-gray-800 mb-4';
-            ui.messageBox.classList.remove('hidden');
-            ui.messageBox.classList.add('flex');
-        }
-
-        /** Esconde a caixa de mensagem. */
-        function hideMessage() {
-            ui.messageBox.classList.add('hidden');
-            ui.messageBox.classList.remove('flex');
-        }
-
-        /** Alterna o estado de loading do botão de submissão. */
-        function setLoading(isLoading) {
-            ui.submitBtn.disabled = isLoading;
-            if (isLoading) {
-                ui.submitBtnText.classList.add('hidden');
-                ui.loadingIndicator.classList.remove('hidden');
-            } else {
-                ui.submitBtnText.classList.remove('hidden');
-                ui.loadingIndicator.classList.add('hidden');
+            if (type === 'success') {
+                area.classList.add('bg-green-100', 'text-green-800', 'border', 'border-green-400');
+            } else if (type === 'error') {
+                area.classList.add('bg-red-100', 'text-red-800', 'border', 'border-red-400');
+            } else if (type === 'info') {
+                area.classList.add('bg-blue-100', 'text-blue-800', 'border', 'border-blue-400');
             }
+            setTimeout(() => area.classList.add('hidden'), 8000); // Esconde após 8 segundos
+        }
+
+        // Função para limpar a área de mensagens
+        function clearMessage() {
+            document.getElementById('message-area').classList.add('hidden');
         }
         
-        /** Alterna entre a visualização do Formulário e da Tabela. */
-        function toggleView(showForm) {
-            if (showForm) {
-                ui.formContainer.classList.remove('hidden');
-                ui.viewContainer.classList.add('hidden');
-                ui.showFormBtn.classList.replace('bg-gray-400', 'bg-blue-600');
-                ui.showFormBtn.classList.replace('hover:bg-gray-500', 'hover:bg-blue-700');
-                ui.showViewBtn.classList.replace('bg-blue-600', 'bg-gray-400');
-                ui.showViewBtn.classList.replace('hover:bg-blue-700', 'hover:bg-gray-500');
-                // Se voltar para o formulário, reseta para "Novo Registo"
-                clearForm();
-            } else {
-                ui.formContainer.classList.add('hidden');
-                ui.viewContainer.classList.remove('hidden');
-                ui.showFormBtn.classList.replace('bg-blue-600', 'bg-gray-400');
-                ui.showFormBtn.classList.replace('hover:bg-blue-700', 'hover:bg-gray-500');
-                ui.showViewBtn.classList.replace('bg-gray-400', 'bg-blue-600');
-                ui.showViewBtn.classList.replace('hover:bg-gray-500', 'hover:bg-blue-700');
-                loadRecords(); // Carrega os dados ao mudar para a visualização
-            }
-        }
-
-
-        // --- Funções de Formato de Dados ---
-
-        /** Cria o HTML para um grupo de inputs de giro. */
-        function createGiroLine(index, giroData = {}) {
-            const isFirst = index === 1;
-            const container = document.createElement('div');
-            container.id = `giroLine-${index}`;
-            container.className = 'giro-line p-4 border border-gray-200 rounded-lg bg-gray-50 grid grid-cols-2 md:grid-cols-5 gap-4 relative';
-            
-            // Botão de remover (apenas para linhas adicionais)
-            const removeButton = !isFirst ? 
-                `<button type="button" data-index="${index}" class="remove-giro absolute top-1 right-1 text-red-500 hover:text-red-700 font-bold text-lg" title="Remover Giro">
-                    &times;
-                </button>` : 
-                '';
-
-            // ATENÇÃO: Os campos NEI e Cliente não são mais obrigatórios aqui
-            container.innerHTML = `
-                ${removeButton}
-                <div class="col-span-2 md:col-span-1 giro-line-input">
-                    <label class="block text-xs font-medium text-gray-500">NEI (Giro ${index}):</label>
-                    <input type="text" data-field="NEI" value="${giroData.NEI || ''}" class="giro-input mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2 border">
-                </div>
-                <div class="col-span-2 md:col-span-1 giro-line-input">
-                    <label class="block text-xs font-medium text-gray-500">Cliente (Giro ${index}):</label>
-                    <input type="text" data-field="Cliente" value="${giroData.Cliente || ''}" class="giro-input mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2 border">
-                </div>
-                <div class="col-span-1 giro-line-input">
-                    <label class="block text-xs font-medium text-gray-500">KM Chegada:</label>
-                    <input type="number" data-field="KM_Chegada" value="${giroData.KM_Chegada || ''}" class="giro-input mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2 border">
-                </div>
-                <div class="col-span-1 giro-line-input">
-                    <label class="block text-xs font-medium text-gray-500">Hora Chegada:</label>
-                    <input type="time" data-field="Hora_Chegada" value="${giroData.Hora_Chegada || ''}" class="giro-input mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2 border">
-                </div>
-                <div class="col-span-1 giro-line-input">
-                    <label class="block text-xs font-medium text-gray-500">Hora Saída:</label>
-                    <input type="time" data-field="Hora_Saida" value="${giroData.Hora_Saida || ''}" class="giro-input mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2 border">
-                </div>
-            `;
-
-            // Adicionar listener para remover o giro
-            if (!isFirst) {
-                container.querySelector('.remove-giro').addEventListener('click', (e) => {
-                    e.target.closest('.giro-line').remove();
-                });
-            }
-
-            return container;
-        }
-
-        /** Gera os checkboxes de equipamento. */
-        function renderEquipamentoCheckboxes() {
-            ui.equipamentoCheckboxes.innerHTML = EQUIPAMENTO_OPTIONS.map(option => `
-                <div class="flex items-center">
-                    <input id="equipamento-${option.replace(/\s/g, '_')}" type="checkbox" name="Equipamento" value="${option}" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                    <label for="equipamento-${option.replace(/\s/g, '_')}" class="ml-2 block text-sm text-gray-700">
-                        ${option}
-                    </label>
-                </div>
-            `).join('');
-        }
-
-        /** Limpa o formulário e reseta o estado. */
-        function clearForm() {
-            ui.girosForm.reset();
+        // Função para limpar e reconfigurar o formulário para um novo registo
+        function resetForm() {
+            document.getElementById('giro-form').reset();
+            currentRecordId = null;
             document.getElementById('ID_Registo').value = '';
-            
-            // Limpa e reseta as linhas de giro
-            ui.girosContainer.innerHTML = '';
-            giroLinhaCount = 1;
-            ui.girosContainer.appendChild(createGiroLine(1));
-
-            // Atualiza o título e botão
-            ui.formTitle.textContent = 'Novo Registo de Serviço';
-            ui.submitBtnText.textContent = 'Registar Serviço';
+            document.getElementById('form-title').textContent = 'Novo Registo';
+            document.getElementById('submit-text').textContent = 'Adicionar Registo';
+            document.getElementById('submit-button').classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
+            document.getElementById('submit-button').classList.add('bg-blue-600', 'hover:bg-blue-700');
         }
 
-        // --- Funções de Comunicação com Apps Script ---
+        // Função para preencher o formulário com dados carregados
+        function fillForm(record) {
+            if (!record) return;
 
-        /** Envia o registo para o Sheets (Adicionar ou Editar). */
-        async function submitForm(event) {
-            event.preventDefault();
-            setLoading(true);
+            // Mapeia os dados do registo para os campos do formulário
+            for (const key in record) {
+                const element = document.getElementById(key);
+                if (element) {
+                    if (element.type === 'checkbox') {
+                         // Lida com checkboxes (o campo 'Equipamento')
+                         const checkedEquipments = String(record[key]).split(',').map(item => item.trim());
+                         document.querySelectorAll('input[name="Equipamento"]').forEach(checkbox => {
+                            checkbox.checked = checkedEquipments.includes(checkbox.value);
+                         });
+                    } else {
+                        element.value = record[key];
+                    }
+                }
+            }
+            
+            // Configura o formulário para edição
+            currentRecordId = record.ID_Registo;
+            document.getElementById('ID_Registo').value = currentRecordId;
+            document.getElementById('form-title').textContent = 'Editar Registo (ID: ' + currentRecordId + ')';
+            document.getElementById('submit-text').textContent = 'Guardar Alterações';
+            document.getElementById('submit-button').classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            document.getElementById('submit-button').classList.add('bg-yellow-600', 'hover:bg-yellow-700');
+            clearMessage();
+            displayMessage('Registo ' + currentRecordId + ' carregado com sucesso para edição.', 'info');
+        }
 
-            const isEdit = !!document.getElementById('ID_Registo').value;
-            const action = isEdit ? 'edit' : 'add';
+        // Função para lidar com a pesquisa de registos
+        async function searchRecord() {
+            const searchId = document.getElementById('search-id').value.trim();
+            clearMessage();
 
-            // 1. Coletar dados da seção principal
-            const formData = {
-                action: action,
-                ID_Registo: document.getElementById('ID_Registo').value,
-                Data: document.getElementById('Data').value,
-                KM_Inicio_Dia: document.getElementById('KM_Inicio_Dia').value,
-                Hora_Inicio: document.getElementById('Hora_Inicio').value,
-                KM_Saida_Dia: document.getElementById('KM_Saida_Dia').value,
-                Hora_Fim: document.getElementById('Hora_Fim').value,
-                Matricula: document.getElementById('Matricula').value.toUpperCase(),
-                Reboque: document.getElementById('Reboque').value.toUpperCase(),
-                Motorista: document.getElementById('Motorista').value,
-                Hora_Descarga: document.getElementById('Hora_Descarga').value,
-                KM_Descarga: document.getElementById('KM_Descarga').value,
-                Servico_Status: document.getElementById('Servico_Status').value,
-                Abastecimento_Data: document.getElementById('Abastecimento_Data').value,
-                Abastecimento_KMs: document.getElementById('Abastecimento_KMs').value,
-            };
-
-            // Validação mínima para novos registos
-            if (!isEdit && (!formData.Data || !formData.Matricula || !formData.Motorista)) {
-                showMessage("A Data, Matrícula e Motorista são obrigatórios para um novo registo.", true);
-                setLoading(false);
+            if (!searchId) {
+                resetForm();
+                displayMessage('Formulário limpo. Pronto para um novo registo.', 'info');
                 return;
             }
 
-
-            // 2. Coletar dados de Equipamento
-            const equipamentosSelecionados = Array.from(ui.equipamentoCheckboxes.querySelectorAll('input:checked'))
-                .map(cb => cb.value);
-            formData.Equipamento = equipamentosSelecionados.join(', ');
-
-            // 3. Coletar dados das linhas de Giro (Formato JSON)
-            const giroLines = Array.from(ui.girosContainer.querySelectorAll('.giro-line')).map(line => {
-                const giro = {};
-                line.querySelectorAll('.giro-input').forEach(input => {
-                    // Trata vazios como string vazia, não null
-                    giro[input.dataset.field] = input.value || ''; 
-                });
-                return giro;
-            });
-            formData.Giro_Linhas = JSON.stringify(giroLines); // O GAS espera um JSON string
-            
-            // --- DIAGNÓSTICO DE ERROS ---
-            console.log("🛠️ URL de Destino:", GOOGLE_APPS_SCRIPT_URL);
-            console.log("🛠️ Payload Enviado:", JSON.stringify(formData));
-            // ---------------------------
+            document.getElementById('loading').classList.remove('hidden');
 
             try {
-                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'cors', // Crucial para requisições de sites externos
-                    cache: 'no-cache',
-                    redirect: 'follow', // 🔴 CORREÇÃO: Adiciona a diretiva para seguir redirecionamentos, comum em Apps Script
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
-                });
-
-                // Se houver um erro de rede/servidor, o 'response.ok' será falso.
-                if (!response.ok) {
-                    console.error("🔴 ERRO HTTP:", response.status, response.statusText);
-                    // Tenta obter o texto da resposta para diagnóstico adicional
-                    const errorText = await response.text();
-                    console.error("🔴 Corpo da Resposta de Erro:", errorText);
-                    throw new Error(`Erro HTTP ${response.status}. Verifique o console do navegador e as permissões do Apps Script. Resposta: ${errorText.substring(0, 100)}...`);
+                const url = APPS_SCRIPT_URL + '?action=getById&id=' + encodeURIComponent(searchId);
+                console.log('A tentar pesquisar registo em (GET):', url); // Log adicionado
+                const response = await fetch(url, { method: 'GET' });
+                const result = await response.json();
+                
+                if (result.success && result.record) {
+                    fillForm(result.record);
+                } else if (result.success && !result.record) {
+                    displayMessage(`Registo com ID ${searchId} não encontrado.`, 'error');
+                } else {
+                    displayMessage('Erro ao carregar registo: ' + (result.error || 'Erro desconhecido.'), 'error');
                 }
 
+            } catch (error) {
+                console.error('Erro na pesquisa:', error);
+                // Mensagem de erro melhorada
+                displayMessage('Erro de conexão ou CORS (Failed to fetch). Por favor, verifique se o Google Apps Script está publicado corretamente (Execução como "Eu" e acesso como "Qualquer pessoa"). Erro: ' + error.message, 'error');
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+            }
+        }
+
+        // Função para lidar com a submissão do formulário (Adicionar/Editar)
+        async function submitForm() {
+            clearMessage();
+            document.getElementById('loading').classList.remove('hidden');
+            
+            const form = document.getElementById('giro-form');
+            const data = {};
+            const action = currentRecordId ? 'edit' : 'add';
+
+            // Recolhe dados de campos simples
+            const simpleFields = ['ID_Registo', 'Data', 'KM_Inicio_Dia', 'Hora_Inicio', 'KM_Saida_Dia', 'Hora_Fim', 'Matricula', 'Reboque', 'Motorista', 'NEI', 'Cliente', 'KM_Chegada', 'Hora_Chegada', 'Hora_Saida', 'Hora_Descarga', 'KM_Descarga', 'Servico_Status', 'Abastecimento_Data', 'Abastecimento_KMs', 'Abastecimento_Lts'];
+            
+            simpleFields.forEach(key => {
+                const element = document.getElementById(key);
+                if (element) {
+                    // Trata valores numéricos para POST (os scripts GAS lidam com a conversão de strings)
+                    data[key] = (element.type === 'number') ? (element.value || '') : element.value;
+                }
+            });
+            
+            // Lida com o campo Equipamento (checkoxes)
+            const selectedEquipments = Array.from(document.querySelectorAll('input[name="Equipamento"]:checked'))
+                                         .map(cb => cb.value);
+            data.Equipamento = selectedEquipments.join(', '); // Envia como string separada por vírgulas
+
+            data.action = action;
+
+            // Remove o ID do Registo se estivermos a adicionar um novo (o servidor cria o ID)
+            if (action === 'add') {
+                delete data.ID_Registo;
+            }
+
+            console.log('A tentar submeter dados para (POST):', APPS_SCRIPT_URL, 'com Ação:', action); // Log adicionado
+
+            try {
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
                 const result = await response.json();
 
                 if (result.success) {
-                    showMessage(`Sucesso! Registo ${isEdit ? 'editado' : 'adicionado'} com ID: ${result.ID_Registo || formData.ID_Registo}`);
-                    clearForm();
-                    // Opcional: Mudar para a visualização após a submissão
-                    toggleView(false);
+                    if (action === 'add') {
+                        displayMessage(`Novo Registo (${result.ID_Registo}) adicionado com sucesso!`, 'success');
+                        resetForm(); // Limpa o formulário após a adição
+                    } else {
+                        displayMessage(`Registo (${result.ID_Registo}) atualizado com sucesso!`, 'success');
+                        // Após a edição, o formulário permanece no modo de edição até que o utilizador carregue "Novo Registo"
+                    }
                 } else {
-                    console.error("🔴 ERRO DE LÓGICA DO GAS:", result.error);
-                    throw new Error(result.error || 'Erro desconhecido ao processar o registo. Verifique a consola do Apps Script.');
+                    displayMessage(`Erro na operação (${action}): ` + (result.error || 'Erro desconhecido.'), 'error');
                 }
 
             } catch (error) {
-                // Captura "Failed to fetch" (erro de rede/CORS) ou erros lançados acima
-                console.error("❌ FALHA GERAL NA SUBMISSÃO:", error);
-                showMessage(`Falha ao registar: ${error.message}. Verifique o URL do Apps Script e as permissões de implementação (Deploy).`, true);
+                console.error('Erro na submissão:', error);
+                // Mensagem de erro melhorada
+                displayMessage('Erro de conexão ou CORS (Failed to fetch). Por favor, verifique se o Google Apps Script está publicado corretamente (Execução como "Eu" e acesso como "Qualquer pessoa"). Erro: ' + error.message, 'error');
             } finally {
-                setLoading(false);
+                document.getElementById('loading').classList.add('hidden');
             }
-        }
-
-        /** Adiciona uma nova linha de inputs para um giro adicional. */
-        function addGiroLine() {
-            giroLinhaCount++;
-            ui.girosContainer.appendChild(createGiroLine(giroLinhaCount));
-            // Foca o primeiro campo da nova linha
-            document.querySelector(`#giroLine-${giroLinhaCount} input[data-field="NEI"]`).focus();
         }
         
-        /** Carrega todos os registos filtrados e renderiza a tabela. */
-        async function loadRecords() {
-            const motorista = ui.filterMotorista.value.trim();
-            const data = ui.filterData.value;
-            
-            // Limpa a tabela
-            ui.recordsBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">A carregar...</td></tr>';
-
-            const url = new URL(GOOGLE_APPS_SCRIPT_URL);
-            url.searchParams.append('action', 'get');
-            if (motorista) url.searchParams.append('motorista', motorista);
-            if (data) url.searchParams.append('data', data);
-
-            try {
-                const response = await fetch(url.toString(), { 
-                    method: 'GET', 
-                    mode: 'cors',
-                    redirect: 'follow' // Adicionado para GETs
-                });
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error("🔴 ERRO HTTP no GET:", response.status, errorText);
-                    throw new Error(`Erro HTTP ${response.status}: Verifique o Apps Script. Resposta: ${errorText.substring(0, 100)}...`);
-                }
-
-                const result = await response.json();
-                
-                if (result.success && result.records) {
-                    renderRecordsTable(result.records);
-                } else {
-                    console.error("🔴 ERRO DE LÓGICA DO GAS (GET):", result.error);
-                    throw new Error(result.error || 'Erro ao carregar os dados.');
-                }
-            } catch (error) {
-                console.error("❌ FALHA GERAL AO CARREGAR REGISTOS:", error);
-                ui.recordsBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-500">Erro: ${error.message}</td></tr>`;
-            }
-        }
-
-        /** Renderiza as linhas na tabela de visualização. */
-        function renderRecordsTable(records) {
-            if (records.length === 0) {
-                ui.recordsBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">Nenhum registo encontrado com os filtros atuais.</td></tr>';
-                return;
-            }
-
-            ui.recordsBody.innerHTML = records.map(record => {
-                const statusClass = record.Servico_Status === 'OK' ? 'status-ok' : (record.Servico_Status === 'NOK' ? 'status-nok' : 'bg-gray-200');
-                
-                return `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${record.Data}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${record.Motorista}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${record.Matricula}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${record.KM_Inicio_Dia}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
-                                ${record.Servico_Status || 'Pendente'}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button data-id="${record.ID_Registo}" class="edit-btn text-indigo-600 hover:text-indigo-900 font-semibold" title="Editar Registo">Editar</button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-            
-            // Adicionar listeners aos botões de edição
-            ui.recordsBody.querySelectorAll('.edit-btn').forEach(button => {
-                button.addEventListener('click', (e) => loadRecordForEdit(e.target.dataset.id));
-            });
-        }
-
-        /** Carrega um único registo para pré-preencher o formulário. */
-        async function loadRecordForEdit(id) {
-            const url = new URL(GOOGLE_APPS_SCRIPT_URL);
-            url.searchParams.append('action', 'getById');
-            url.searchParams.append('id', id);
-
-            try {
-                const response = await fetch(url.toString(), { 
-                    method: 'GET', 
-                    mode: 'cors',
-                    redirect: 'follow' // Adicionado para GETs
-                });
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error("🔴 ERRO HTTP no GET by ID:", response.status, errorText);
-                    throw new Error(`Erro HTTP ${response.status}: Verifique o Apps Script. Resposta: ${errorText.substring(0, 100)}...`);
-                }
-
-                const result = await response.json();
-
-                if (result.success && result.record) {
-                    fillForm(result.record);
-                    toggleView(true); // Mudar para o formulário
-                    window.scrollTo(0, 0); // Rola para o topo
-                } else {
-                    console.error("🔴 ERRO DE LÓGICA DO GAS (GET by ID):", result.error);
-                    throw new Error(result.error || 'Registo não encontrado.');
-                }
-            } catch (error) {
-                console.error("❌ FALHA GERAL AO CARREGAR REGISTO PARA EDIÇÃO:", error);
-                showMessage(`Erro ao carregar: ${error.message}`, true);
-            }
-        }
-
-        /** Preenche o formulário com os dados do registo. */
-        function fillForm(record) {
-            // 1. Campos principais
-            document.getElementById('ID_Registo').value = record.ID_Registo;
-            document.getElementById('Data').value = record.Data;
-            document.getElementById('KM_Inicio_Dia').value = record.KM_Inicio_Dia;
-            document.getElementById('Hora_Inicio').value = record.Hora_Inicio;
-            document.getElementById('KM_Saida_Dia').value = record.KM_Saida_Dia;
-            document.getElementById('Hora_Fim').value = record.Hora_Fim;
-            document.getElementById('Matricula').value = record.Matricula;
-            document.getElementById('Reboque').value = record.Reboque;
-            document.getElementById('Motorista').value = record.Motorista;
-            document.getElementById('Hora_Descarga').value = record.Hora_Descarga;
-            document.getElementById('KM_Descarga').value = record.KM_Descarga;
-            document.getElementById('Servico_Status').value = record.Servico_Status;
-            document.getElementById('Abastecimento_Data').value = record.Abastecimento_Data;
-            document.getElementById('Abastecimento_KMs').value = record.Abastecimento_KMs;
-
-            // 2. Equipamento (Limpa todos e marca os que estão no registo)
-            ui.equipamentoCheckboxes.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                checkbox.checked = false;
-            });
-            const selectedEquip = (record.Equipamento || "").split(',').map(s => s.trim());
-            selectedEquip.forEach(item => {
-                const checkbox = document.querySelector(`input[value="${item}"]`);
-                if (checkbox) checkbox.checked = true;
-            });
-
-            // 3. Linhas de Giro (Limpa e regenera)
-            ui.girosContainer.innerHTML = '';
-            giroLinhaCount = 0;
-            if (record.Giro_Linhas_Parsed && record.Giro_Linhas_Parsed.length > 0) {
-                record.Giro_Linhas_Parsed.forEach((giro, index) => {
-                    giroLinhaCount++;
-                    // O campo KM_Chegada e outros são strings no record, garantimos que o createGiroLine lida com isso.
-                    ui.girosContainer.appendChild(createGiroLine(giroLinhaCount, {
-                        NEI: giro.NEI,
-                        Cliente: giro.Cliente,
-                        KM_Chegada: giro.KM_Chegada,
-                        Hora_Chegada: giro.Hora_Chegada,
-                        Hora_Saida: giro.Hora_Saida
-                    }));
-                });
-            } else {
-                // Deve haver sempre pelo menos 1 linha
-                giroLinhaCount = 1;
-                ui.girosContainer.appendChild(createGiroLine(1));
-            }
-
-
-            // 4. Atualiza o título e botão
-            ui.formTitle.textContent = `Editar Registo: ${record.ID_Registo}`;
-            ui.submitBtnText.textContent = 'Guardar Edição';
-        }
-
-        // --- Event Listeners e Inicialização ---
-
-        document.addEventListener('DOMContentLoaded', () => {
-            renderEquipamentoCheckboxes(); // Cria os checkboxes de equipamento
-            clearForm(); // Inicializa o formulário com 1 linha de giro
-            
-            ui.girosForm.addEventListener('submit', submitForm);
-            ui.addGiroBtn.addEventListener('click', addGiroLine);
-            ui.closeMessageBtn.addEventListener('click', hideMessage);
-            ui.showFormBtn.addEventListener('click', () => toggleView(true));
-            ui.showViewBtn.addEventListener('click', () => toggleView(false));
-            ui.filterBtn.addEventListener('click', loadRecords);
-            
-            // Permite carregar registos também ao pressionar Enter nos campos de filtro
-            ui.filterMotorista.addEventListener('keyup', (e) => { if (e.key === 'Enter') loadRecords(); });
-            ui.filterData.addEventListener('change', loadRecords); // Carrega ao selecionar a data
-        });
-
+        // Inicialização: Configura o formulário para o modo "Novo Registo"
+        document.addEventListener('DOMContentLoaded', resetForm);
     </script>
+
 </body>
 </html>
