@@ -73,15 +73,15 @@
                     <!-- Bloco de Informações Principais -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 border-b pb-6 mb-6">
                         <div class="col-span-1">
-                            <label for="Data" class="block text-sm font-medium text-gray-700">Data:</label>
+                            <label for="Data" class="block text-sm font-medium text-gray-700">Data <span class="text-red-500">*</span>:</label>
                             <input type="date" id="Data" name="Data" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
                         </div>
                         <div class="col-span-1">
-                            <label for="Matricula" class="block text-sm font-medium text-gray-700">Matrícula:</label>
+                            <label for="Matricula" class="block text-sm font-medium text-gray-700">Matrícula <span class="text-red-500">*</span>:</label>
                             <input type="text" id="Matricula" name="Matricula" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border uppercase">
                         </div>
                          <div class="col-span-1">
-                            <label for="Motorista" class="block text-sm font-medium text-gray-700">Motorista:</label>
+                            <label for="Motorista" class="block text-sm font-medium text-gray-700">Motorista <span class="text-red-500">*</span>:</label>
                             <input type="text" id="Motorista" name="Motorista" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
                         </div>
                         <div class="col-span-1">
@@ -90,11 +90,11 @@
                         </div>
                         <div class="col-span-1">
                             <label for="KM_Inicio_Dia" class="block text-sm font-medium text-gray-700">KM Início do Dia:</label>
-                            <input type="number" id="KM_Inicio_Dia" name="KM_Inicio_Dia" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
+                            <input type="number" id="KM_Inicio_Dia" name="KM_Inicio_Dia" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
                         </div>
                         <div class="col-span-1">
                             <label for="Hora_Inicio" class="block text-sm font-medium text-gray-700">Hora Início:</label>
-                            <input type="time" id="Hora_Inicio" name="Hora_Inicio" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
+                            <input type="time" id="Hora_Inicio" name="Hora_Inicio" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
                         </div>
                         <div class="col-span-1">
                             <label for="KM_Saida_Dia" class="block text-sm font-medium text-gray-700">KM Saída do Dia:</label>
@@ -134,7 +134,7 @@
                         </div>
                         <div class="col-span-1">
                             <label for="Servico_Status" class="block text-sm font-medium text-gray-700">Serviço OK / NOK:</label>
-                            <select id="Servico_Status" name="Servico_Status" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border bg-white">
+                            <select id="Servico_Status" name="Servico_Status" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border bg-white">
                                 <option value="">Selecione...</option>
                                 <option value="OK">OK (Pisco)</option>
                                 <option value="NOK">NOK</option>
@@ -229,8 +229,9 @@
     </div>
 
     <script>
-        // *** NOVO URL FORNECIDO PELO UTILIZADOR ***
-        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOVb0gHRHsgHRAuEtiBvvIo0WIpQXTZGLEyNduil-DQjEAFwUOtvcz78NDG-MDPekG/exec';
+        // *** 🔴 PASSO CRÍTICO: COLE A SUA URL AQUI E VERIFIQUE AS PERMISSÕES ***
+        // A sua URL deve começar com 'https://script.google.com/macros/s/...'
+        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzgG0N0KwvQ5UZP8NxpeAXODIAz3gdIAudXDFtW2RU2GEB8kx89CLEDmK3dsew9x9cd/exec';
         
         let giroLinhaCount = 1;
         const EQUIPAMENTO_OPTIONS = [
@@ -329,15 +330,16 @@
                 </button>` : 
                 '';
 
+            // ATENÇÃO: Os campos NEI e Cliente não são mais obrigatórios aqui
             container.innerHTML = `
                 ${removeButton}
                 <div class="col-span-2 md:col-span-1 giro-line-input">
                     <label class="block text-xs font-medium text-gray-500">NEI (Giro ${index}):</label>
-                    <input type="text" data-field="NEI" value="${giroData.NEI || ''}" required class="giro-input mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2 border">
+                    <input type="text" data-field="NEI" value="${giroData.NEI || ''}" class="giro-input mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2 border">
                 </div>
                 <div class="col-span-2 md:col-span-1 giro-line-input">
                     <label class="block text-xs font-medium text-gray-500">Cliente (Giro ${index}):</label>
-                    <input type="text" data-field="Cliente" value="${giroData.Cliente || ''}" required class="giro-input mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2 border">
+                    <input type="text" data-field="Cliente" value="${giroData.Cliente || ''}" class="giro-input mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2 border">
                 </div>
                 <div class="col-span-1 giro-line-input">
                     <label class="block text-xs font-medium text-gray-500">KM Chegada:</label>
@@ -419,6 +421,14 @@
                 Abastecimento_KMs: document.getElementById('Abastecimento_KMs').value,
             };
 
+            // Validação mínima para novos registos
+            if (!isEdit && (!formData.Data || !formData.Matricula || !formData.Motorista)) {
+                showMessage("A Data, Matrícula e Motorista são obrigatórios para um novo registo.", true);
+                setLoading(false);
+                return;
+            }
+
+
             // 2. Coletar dados de Equipamento
             const equipamentosSelecionados = Array.from(ui.equipamentoCheckboxes.querySelectorAll('input:checked'))
                 .map(cb => cb.value);
@@ -428,20 +438,36 @@
             const giroLines = Array.from(ui.girosContainer.querySelectorAll('.giro-line')).map(line => {
                 const giro = {};
                 line.querySelectorAll('.giro-input').forEach(input => {
-                    giro[input.dataset.field] = input.value;
+                    // Trata vazios como string vazia, não null
+                    giro[input.dataset.field] = input.value || ''; 
                 });
                 return giro;
             });
             formData.Giro_Linhas = JSON.stringify(giroLines); // O GAS espera um JSON string
+            
+            // --- DIAGNÓSTICO DE ERROS ---
+            console.log("🛠️ URL de Destino:", GOOGLE_APPS_SCRIPT_URL);
+            console.log("🛠️ Payload Enviado:", JSON.stringify(formData));
+            // ---------------------------
 
             try {
                 const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'cors',
+                    mode: 'cors', // Crucial para requisições de sites externos
                     cache: 'no-cache',
+                    redirect: 'follow', // 🔴 CORREÇÃO: Adiciona a diretiva para seguir redirecionamentos, comum em Apps Script
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
                 });
+
+                // Se houver um erro de rede/servidor, o 'response.ok' será falso.
+                if (!response.ok) {
+                    console.error("🔴 ERRO HTTP:", response.status, response.statusText);
+                    // Tenta obter o texto da resposta para diagnóstico adicional
+                    const errorText = await response.text();
+                    console.error("🔴 Corpo da Resposta de Erro:", errorText);
+                    throw new Error(`Erro HTTP ${response.status}. Verifique o console do navegador e as permissões do Apps Script. Resposta: ${errorText.substring(0, 100)}...`);
+                }
 
                 const result = await response.json();
 
@@ -451,12 +477,14 @@
                     // Opcional: Mudar para a visualização após a submissão
                     toggleView(false);
                 } else {
-                    throw new Error(result.error || 'Erro desconhecido ao processar o registo.');
+                    console.error("🔴 ERRO DE LÓGICA DO GAS:", result.error);
+                    throw new Error(result.error || 'Erro desconhecido ao processar o registo. Verifique a consola do Apps Script.');
                 }
 
             } catch (error) {
-                console.error("Erro na submissão:", error);
-                showMessage(`Falha ao registar: ${error.message}`, true);
+                // Captura "Failed to fetch" (erro de rede/CORS) ou erros lançados acima
+                console.error("❌ FALHA GERAL NA SUBMISSÃO:", error);
+                showMessage(`Falha ao registar: ${error.message}. Verifique o URL do Apps Script e as permissões de implementação (Deploy).`, true);
             } finally {
                 setLoading(false);
             }
@@ -484,16 +512,28 @@
             if (data) url.searchParams.append('data', data);
 
             try {
-                const response = await fetch(url.toString(), { method: 'GET', mode: 'cors' });
+                const response = await fetch(url.toString(), { 
+                    method: 'GET', 
+                    mode: 'cors',
+                    redirect: 'follow' // Adicionado para GETs
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error("🔴 ERRO HTTP no GET:", response.status, errorText);
+                    throw new Error(`Erro HTTP ${response.status}: Verifique o Apps Script. Resposta: ${errorText.substring(0, 100)}...`);
+                }
+
                 const result = await response.json();
                 
                 if (result.success && result.records) {
                     renderRecordsTable(result.records);
                 } else {
+                    console.error("🔴 ERRO DE LÓGICA DO GAS (GET):", result.error);
                     throw new Error(result.error || 'Erro ao carregar os dados.');
                 }
             } catch (error) {
-                console.error("Erro ao carregar registos:", error);
+                console.error("❌ FALHA GERAL AO CARREGAR REGISTOS:", error);
                 ui.recordsBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-500">Erro: ${error.message}</td></tr>`;
             }
         }
@@ -539,7 +579,18 @@
             url.searchParams.append('id', id);
 
             try {
-                const response = await fetch(url.toString(), { method: 'GET', mode: 'cors' });
+                const response = await fetch(url.toString(), { 
+                    method: 'GET', 
+                    mode: 'cors',
+                    redirect: 'follow' // Adicionado para GETs
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error("🔴 ERRO HTTP no GET by ID:", response.status, errorText);
+                    throw new Error(`Erro HTTP ${response.status}: Verifique o Apps Script. Resposta: ${errorText.substring(0, 100)}...`);
+                }
+
                 const result = await response.json();
 
                 if (result.success && result.record) {
@@ -547,10 +598,11 @@
                     toggleView(true); // Mudar para o formulário
                     window.scrollTo(0, 0); // Rola para o topo
                 } else {
+                    console.error("🔴 ERRO DE LÓGICA DO GAS (GET by ID):", result.error);
                     throw new Error(result.error || 'Registo não encontrado.');
                 }
             } catch (error) {
-                console.error("Erro ao carregar registo para edição:", error);
+                console.error("❌ FALHA GERAL AO CARREGAR REGISTO PARA EDIÇÃO:", error);
                 showMessage(`Erro ao carregar: ${error.message}`, true);
             }
         }
