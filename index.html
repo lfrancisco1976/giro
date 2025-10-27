@@ -12,7 +12,6 @@
   --texto: #222;
   --servico-bg: #e6f7ff;
 }
-
 body { font-family: "Inter", Arial, sans-serif; background: var(--fundo); color: var(--texto); margin:0; padding:12px; }
 h2 { font-size:1.4rem; margin-bottom:10px; }
 .card { background:var(--cartao); border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.1); padding:16px; margin-bottom:16px; }
@@ -137,7 +136,6 @@ const scriptURL = "https://script.google.com/macros/s/AKfycbyPz3lPDX92vBtrzPghgN
 document.getElementById("data").valueAsDate = new Date();
 document.getElementById("Motorista").value = document.getElementById("motorista").value;
 
-// Adiciona nova linha de serviço
 function adicionarLinha(){
   const container = document.getElementById("servicoContainer");
   const div = document.createElement("div");
@@ -152,19 +150,17 @@ function adicionarLinha(){
   container.appendChild(div);
 }
 
-// Carregar registos guardados
 function carregar(){
   const motorista = document.getElementById("motorista").value;
   const data = document.getElementById("data").value;
   document.getElementById("Motorista").value = motorista;
-  
+
   fetch(`${scriptURL}?motorista=${encodeURIComponent(motorista)}&data=${encodeURIComponent(data)}`)
     .then(r => r.json())
     .then(dados => {
       if(!dados || !dados.length){ alert("Nenhum registo encontrado."); return; }
       const d = dados[0];
-      
-      // Cabeçalho
+
       document.getElementById("Km início").value=d["Km início"]||"";
       document.getElementById("Hora início").value=d["Hora início"]||"";
       document.getElementById("Km saída").value=d["Km saída"]||"";
@@ -175,7 +171,6 @@ function carregar(){
       document.getElementById("Km descarga").value=d["Km descarga"]||"";
       document.getElementById("Serviço OK").checked=d["Serviço OK"]==="✓";
 
-      // Serviço existente
       const servContainer = document.getElementById("servicoContainer");
       servContainer.innerHTML = '<h2>Serviço</h2>';
       if(d["Serviço"]){
@@ -195,18 +190,14 @@ function carregar(){
           });
         }catch(e){}
       }
-
-      alert("Registo carregado.");
     })
     .catch(err=>alert("Erro ao carregar: "+err));
 }
 
-// Guardar registo
 function guardar(){
   const motorista = document.getElementById("Motorista").value;
   const data = document.getElementById("data").value;
 
-  // Cabeçalho
   const payload = {
     "Data": data,
     "Motorista": motorista,
@@ -216,4 +207,36 @@ function guardar(){
     "Hora fim": document.getElementById("Hora fim").value,
     "Matrícula": document.getElementById("Matrícula").value,
     "Reboque": document.getElementById("Reboque").value,
-    "Hora descarga": document.getElementById("Hora descarga").value
+    "Hora descarga": document.getElementById("Hora descarga").value,
+    "Km descarga": document.getElementById("Km descarga").value,
+    "Serviço OK": document.getElementById("Serviço OK").checked ? "✓":""
+  };
+
+  const servicos = [];
+  document.querySelectorAll("#servicoContainer .linha").forEach(div=>{
+    const s = {
+      NEI: div.querySelector(".nei").value,
+      Cliente: div.querySelector(".cliente").value,
+      Km: div.querySelector(".kmchegada").value,
+      HoraChegada: div.querySelector(".horachegada").value,
+      HoraSaida: div.querySelector(".horasaida").value
+    };
+    if(s.NEI) servicos.push(s);
+  });
+  payload["Serviço"] = JSON.stringify(servicos);
+
+  fetch(scriptURL,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify(payload)
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    alert("Registo guardado com sucesso!");
+    carregar();
+  })
+  .catch(err=>alert("Erro ao guardar: "+err));
+}
+</script>
+</body>
+</html>
