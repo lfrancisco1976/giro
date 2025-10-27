@@ -1,133 +1,247 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt">
 <head>
-  <base target="_top">
-  <style>
-    body { font-family: Arial; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ddd; padding: 8px; }
-    button { margin: 5px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Folha de Giro Digital</title>
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e5e7eb;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', Arial, sans-serif;
+    background: var(--bg);
+    color: #111;
+    margin: 0;
+    padding: 0;
+  }
+
+  header {
+    background: var(--primary);
+    color: white;
+    text-align: center;
+    padding: 1rem;
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  main {
+    max-width: 720px;
+    margin: 2rem auto;
+    padding: 1rem;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 1.5rem;
+  }
+
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    background: #e5e7eb;
+    font-weight: 500;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  .tab.active {
+    background: var(--primary);
+    color: white;
+  }
+
+  .view {
+    background: var(--card);
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  }
+
+  input, textarea, select, button {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 1rem;
+    transition: border 0.2s, box-shadow 0.2s;
+  }
+
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(37,99,235,0.2);
+  }
+
+  button {
+    background: var(--primary);
+    color: white;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: var(--primary-hover);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+
+  th, td {
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+  }
+
+  th {
+    background: #f1f5f9;
+    font-weight: 600;
+  }
+
+  tr:hover td {
+    background: #f9fafb;
+  }
+
+  @media (max-width: 600px) {
+    header { font-size: 1.2rem; }
+    main { padding: 0.5rem; }
+    .view { padding: 1rem; }
+  }
+</style>
 </head>
 <body>
-  <h1>Folha de Giro - Registro Diário</h1>
-  <form id="form">
-    <input type="hidden" id="id" name="id">
+<header>🚛 Folha de Giro Digital</header>
 
-    <h2>Informações Gerais</h2>
-    Data: <input type="date" id="data" name="data"><br>
-    KM Inicial: <input type="number" id="km_inicial" name="km_inicial"><br>
-    Horas: <input type="number" id="horas" name="horas"><br>
-    Matrícula Veículo: <input type="text" id="matricula_veiculo" name="matricula_veiculo"><br>
-    Saída: <input type="time" id="saida" name="saida"><br>
-    Matrícula Reboque: <input type="text" id="matricula_reboque" name="matricula_reboque"><br>
-    Motorista: <input type="text" id="motorista" name="motorista"><br>
-    Refeição: <input type="text" id="refeicao" name="refeicao"><br>
-    Chegada: <input type="time" id="chegada" name="chegada"><br>
-    Anomalias na Viatura: <textarea id="anomalias_viatura" name="anomalias_viatura"></textarea><br>
+<main>
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('novo')">Novo Giro</div>
+    <div class="tab" onclick="showTab('ver')">Ver / Editar</div>
+  </div>
 
-    <h2>Equipamento</h2>
-    Capacete: <input type="checkbox" id="equip_capacete"><br>
-    Luvas: <input type="checkbox" id="equip_luvas"><br>
-    Óculos/Máscaras: <input type="checkbox" id="equip_oculos"><br>
-    Botas: <input type="checkbox" id="equip_botas"><br>
-    Macaco Descartável: <input type="checkbox" id="equip_macaco"><br>
-    Caixa Primeiros Socorros: <input type="checkbox" id="equip_caixa"><br>
-    KAD: <input type="checkbox" id="equip_kad"><br>
-    Mangueiras/Acessórios: <input type="checkbox" id="equip_mangueiras"><br>
+  <!-- NOVO GIRO -->
+  <div id="novo" class="view active">
+    <form id="formGiro">
+      <label>Data</label>
+      <input type="date" name="data" required>
+      <label>Motorista</label>
+      <input type="text" name="motorista" required>
+      <label>Matrícula Viatura</label>
+      <input type="text" name="matricula">
+      <label>Matrícula Reboque</label>
+      <input type="text" name="reboque">
+      <label>Hora Saída</label>
+      <input type="time" name="horaSaida">
+      <label>Hora Chegada</label>
+      <input type="time" name="horaChegada">
+      <label>Km Início</label>
+      <input type="number" name="kmInicio">
+      <label>Km Fim</label>
+      <input type="number" name="kmFim">
+      <label>Cliente</label>
+      <input type="text" name="cliente">
+      <label>Local de Carga</label>
+      <input type="text" name="localCarga">
+      <label>NE / Produtor</label>
+      <input type="text" name="ne">
+      <label>Observações</label>
+      <textarea name="obs" rows="3"></textarea>
+      <button type="submit">💾 Gravar Giro</button>
+    </form>
+  </div>
 
-    <h2>Carga (Adicione linhas conforme necessário)</h2>
-    <table id="cargoTable">
-      <thead><tr><th>Hora Início</th><th>Descarca Cód</th><th>Produtor/NE-FS</th><th>Hora Início/Fim</th><th>Cliente</th><th>Local Carga</th><th>KM Início</th><th>KM Fim</th><th>Ação</th></tr></thead>
-      <tbody></tbody>
+  <!-- VER / EDITAR -->
+  <div id="ver" class="view" style="display:none;">
+    <form id="filtroForm" style="margin-bottom: 1rem;">
+      <input type="text" id="fMotorista" placeholder="Motorista" required>
+      <input type="date" id="fData">
+      <button type="submit">🔍 Filtrar</button>
+    </form>
+
+    <table id="tabela">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Motorista</th>
+          <th>Cliente</th>
+          <th>Local</th>
+          <th>Km</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="5" style="text-align:center;">Sem dados</td></tr>
+      </tbody>
     </table>
-    <button type="button" onclick="addRow('cargoTable', ['hora_inicio', 'descarca_cod', 'produtor_ne_fs', 'hora_inicio_fim', 'cliente', 'local_carga', 'km_inicio', 'km_fim'])">Adicionar Carga</button>
+  </div>
+</main>
 
-    <h2>Dificuldades</h2>
-    <table id="diffTable">
-      <thead><tr><th>FS</th><th>Dificuldade</th><th>Causa</th><th>Ação</th></tr></thead>
-      <tbody></tbody>
-    </table>
-    <button type="button" onclick="addRow('diffTable', ['fs', 'dificuldade', 'causa'])">Adicionar Dificuldade</button>
+<script>
+const scriptURL = "https://script.google.com/macros/s/AKfycbyqaCkB_6oO1Cw2Pza7wEko3EKp0lmYleGOEOE8k07IxEk6VtOLkNpxzdA4VaWRyzQW/exec";
 
-    <h2>Abastecimentos</h2>
-    <table id="fuelTable">
-      <thead><tr><th>Local</th><th>KM</th><th>Litros</th><th>Veículo</th><th>Ação</th></tr></thead>
-      <tbody></tbody>
-    </table>
-    <button type="button" onclick="addRow('fuelTable', ['local', 'km', 'litros', 'veiculo'])">Adicionar Abastecimento</button>
+// --- Alternar tabs ---
+function showTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+  document.querySelector(`.tab[onclick="showTab('${id}')"]`).classList.add('active');
+  document.getElementById(id).style.display = 'block';
+}
 
-    <br><button type="button" onclick="saveData()">Salvar/Atualizar</button>
-  </form>
+// --- Gravar novo giro ---
+document.getElementById('formGiro').addEventListener('submit', async e => {
+  e.preventDefault();
+  const form = e.target;
+  const data = Object.fromEntries(new FormData(form).entries());
+  const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify(data) });
+  const json = await res.json();
+  alert(json.status === 'success' ? '✅ Giro gravado com sucesso!' : '❌ Erro ao gravar.');
+  form.reset();
+});
 
-  <script>
-    function addRow(tableId, fields) {
-      const table = document.getElementById(tableId).getElementsByTagName('tbody')[0];
-      const row = table.insertRow();
-      fields.forEach(field => {
-        const cell = row.insertCell();
-        const input = document.createElement('input');
-        input.type = field.includes('hora') || field.includes('saida') || field.includes('chegada') ? 'time' : field.includes('km') || field.includes('litros') ? 'number' : 'text';
-        input.name = `${tableId}_${field}`;
-        cell.appendChild(input);
-      });
-      const actionCell = row.insertCell();
-      const removeBtn = document.createElement('button');
-      removeBtn.textContent = 'Remover';
-      removeBtn.onclick = () => row.remove();
-      actionCell.appendChild(removeBtn);
-    }
+// --- Data atual por defeito ---
+document.getElementById('fData').valueAsDate = new Date();
+document.querySelector('[name="data"]').valueAsDate = new Date();
 
-    function collectTableData(tableId, fields) {
-      const rows = document.getElementById(tableId).getElementsByTagName('tbody')[0].rows;
-      return Array.from(rows).map(row => {
-        const data = {};
-        fields.forEach((field, idx) => data[field] = row.cells[idx].firstChild.value || '');
-        return data;
-      });
-    }
+// --- Filtrar giros ---
+document.getElementById('filtroForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const motorista = document.getElementById('fMotorista').value.trim();
+  const data = document.getElementById('fData').value;
+  const url = `${scriptURL}?motorista=${encodeURIComponent(motorista)}&data=${encodeURIComponent(data)}`;
+  const res = await fetch(url);
+  const giros = await res.json();
 
-    function saveData() {
-      const formData = {
-        id: document.getElementById('id').value,
-        data: document.getElementById('data').value,
-        km_inicial: document.getElementById('km_inicial').value,
-        horas: document.getElementById('horas').value,
-        matricula_veiculo: document.getElementById('matricula_veiculo').value,
-        saida: document.getElementById('saida').value,
-        matricula_reboque: document.getElementById('matricula_reboque').value,
-        motorista: document.getElementById('motorista').value,
-        refeicao: document.getElementById('refeicao').value,
-        chegada: document.getElementById('chegada').value,
-        anomalias_viatura: document.getElementById('anomalias_viatura').value,
-        equip_capacete: document.getElementById('equip_capacete').checked,
-        equip_luvas: document.getElementById('equip_luvas').checked,
-        equip_oculos: document.getElementById('equip_oculos').checked,
-        equip_botas: document.getElementById('equip_botas').checked,
-        equip_macaco: document.getElementById('equip_macaco').checked,
-        equip_caixa: document.getElementById('equip_caixa').checked,
-        equip_kad: document.getElementById('equip_kad').checked,
-        equip_mangueiras: document.getElementById('equip_mangueiras').checked,
-        cargo: collectTableData('cargoTable', ['hora_inicio', 'descarca_cod', 'produtor_ne_fs', 'hora_inicio_fim', 'cliente', 'local_carga', 'km_inicio', 'km_fim']),
-        difficulties: collectTableData('diffTable', ['fs', 'dificuldade', 'causa']),
-        fuel: collectTableData('fuelTable', ['local', 'km', 'litros', 'veiculo'])
-      };
+  const tbody = document.querySelector('#tabela tbody');
+  if (!giros.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Sem registos encontrados</td></tr>`;
+    return;
+  }
 
-      fetch('https://script.google.com/macros/s/AKfycbxYvRtClGF_G2i_zRB06SYfkgSLrE49UNPAlgX58upwFL4iztLMRPXEGxTBGuI3ml-d/exec', {
-        method: 'POST',
-        body: JSON.stringify(formData)
-      })
-        .then(response => response.json())
-        .then(result => {
-          if (result.status === 'success') {
-            document.getElementById('id').value = result.id;
-            alert('Dados salvos com sucesso! ID: ' + result.id);
-          } else {
-            alert('Erro: ' + result.message);
-          }
-        })
-        .catch(error => alert('Erro ao salvar: ' + error.message));
-    }
-  </script>
+  tbody.innerHTML = giros.map(g => `
+    <tr>
+      <td>${g.Data || ''}</td>
+      <td>${g.Motorista || ''}</td>
+      <td>${g.Cliente || ''}</td>
+      <td>${g["Local Carga"] || ''}</td>
+      <td>${g["Km Início"] || ''} → ${g["Km Fim"] || ''}</td>
+    </tr>
+  `).join('');
+});
+</script>
 </body>
 </html>
